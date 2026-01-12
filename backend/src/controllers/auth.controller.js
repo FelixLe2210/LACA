@@ -2,8 +2,10 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model");
 const EmailOTP = require("../models/emailOTP.model");
-const { generateOTPToken } = require("../utils/jwt");
+const jwtUtil = require("../utils/jwt");
 const authService = require("../services/auth.service");
+const { randomUUID } = require("crypto");
+const { setRefreshTokenCookie } = require("../utils/cookie");
 const {
   USERNAME_LENGTH_MIN,
   USERNAME_LENGTH_MAX,
@@ -11,6 +13,7 @@ const {
   PASSWORD_LENGTH_MAX,
 } = process.env;
 const emailService = require("../services/email.service");
+const RefreshToken = require("../models/refreshToken.model");
 
 exports.register = async (req, res) => {
   try {
@@ -77,25 +80,71 @@ exports.register = async (req, res) => {
     );
 
     const otp = await EmailOTP.create({
-      userID: user._id,
-      email: user.email,
+      otpToken: randomUUID(),
+      userId: user._id,
       otp: hashedOTP,
-      expiredAt: authService.generateOTPExpiredAt(),
+      expiresAt: authService.generateOTPExpiredAt(),
       isUsed: false,
       attempts: 0,
     });
 
     await emailService.sendOTPRegister(user.email, plainOTP);
     return res.status(201).json({
-      success: true,
       message: "OTP đã được gửi về email",
       data: {
-        OTPToken: generateOTPToken(user._id, otp._id),
-        expiredAt: otp.expiredAt,
+        otpToken: otp.otpToken,
+        expiresAt: otp.expiresAt,
       },
     });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { otpToken, otpCode } = req.body;
+
+    if (!otpToken || !otpCode) {
+      return res.status(400).json({
+        message: "Thiếu otpToken hoặc otpCode",
+      });
+    }
+
+    const { userId } = await emailService.verifyOTP({
+      otpToken,
+      otpCode,
+    });
+    const accessToken = jwtUtil.generateAccessToken(userId);
+    const refreshToken = jwtUtil.generateRefreshToken(userId);
+
+    const tokenHash = await bcrypt.hash(
+      refreshToken,
+      Number(process.env.SALT_ROUNDS)
+    );
+    await RefreshToken.create({
+      userId,
+      tokenHash,
+      userAgent: req.headers["user-agent"] || "unknown",
+      ipAddress: req.ip,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      isRevoked: false,
+    });
+
+    setRefreshTokenCookie(res, refreshToken);
+    return res.status(200).json({
+      success: true,
+      message: "Xác thực OTP thành công",
+      data: {
+        accessToken,
+      },
+    });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    console.error(error);
+    return res.status(statusCode).json({
+      message: error.message || "Internal server error",
+    });
   }
 };

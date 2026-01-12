@@ -32,19 +32,9 @@ exports.generateRefreshToken = (userID) => {
 };
 
 exports.verifyAccessToken = (token) => {
-  try {
-    const userID = jwt.verify(token, JWT_ACCESS_SECRET);
-    return userID;
-  } catch (err) {
-    return null;
-  }
+  return jwt.verify(token, JWT_ACCESS_SECRET);
 };
 
 exports.verifyRefreshToken = (token) => {
-  try {
-    const userID = jwt.verify(token, JWT_REFRESH_SECRET);
-    return userID;
-  } catch (err) {
-    return null;
-  }
+  return jwt.verify(token, process.env.REFRESH_SECRET);
 };

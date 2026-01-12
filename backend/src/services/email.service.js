@@ -1,4 +1,35 @@
 const sendEmail = require("../utils/mailer");
+const bcrypt = require("bcryptjs");
+const AppError = require("../utils/appError");
+const OTP = require("../models/emailOTP.model");
+
+exports.verifyOTP = async ({ otpToken, otpCode }) => {
+  const otp = await OTP.findOne({ otpToken });
+  if (!otp) {
+    throw new AppError("OTP không tồn tại", 400);
+  }
+  if (otp.isUsed) {
+    throw new AppError("OTP đã được sử dụng", 400);
+  }
+  // if (otp.expiresAt < new Date()) {
+  //   throw new AppError("OTP đã hết hạn", 400);
+  // }
+  if (otp.attempts >= 5) {
+    throw new AppError("OTP đã bị khóa do nhập sai quá nhiều lần", 429);
+  }
+  const isMatch = await bcrypt.compare(otpCode, otp.otp);
+  if (!isMatch) {
+    otp.attempts += 1;
+    await otp.save();
+    throw new AppError("OTP không đúng", 400);
+  }
+
+  otp.isUsed = true;
+  await otp.save();
+  return {
+    userId: otp.userId,
+  };
+};
 
 exports.sendOTPRegister = async (email, otp) => {
   const subject = "Mã xác thực đăng ký tài khoản";

@@ -1,19 +1,20 @@
 const mongoose = require("mongoose");
 
 const emailOTPSchema = new mongoose.Schema({
-  userID: {
+  otpToken: {
     type: String,
     required: true,
+    unique: true,
   },
-  email: {
-    type: String,
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
     required: true,
   },
   otp: {
     type: String,
     required: true,
   },
-  expiredAt: {
+  expiresAt: {
     type: Date,
     required: true,
   },
