@@ -1,23 +1,36 @@
-// src/pages/RegisterPage.jsx
-import React, { useState } from "react";
-import RegisterForm from "../components/auth/RegisterForm";
-import OtpForm from "../components/auth/OtpForm";
-// Đảm bảo đường dẫn ảnh đúng
-import lacaLogo from "../assets/images/laca_logo.png";
+import React, { useState } from 'react';
+import RegisterForm from '../components/auth/RegisterForm';
+import OtpForm from '../components/auth/OtpForm';
+import lacaLogo from '../assets/images/laca_logo.png'; 
 
 const RegisterPage = () => {
   const [step, setStep] = useState(1); // 1: Form, 2: OTP
+  
+  // 1. Thêm biến để lưu email người dùng vừa nhập
+  const [registeredEmail, setRegisteredEmail] = useState('');
+
+  // 2. Hàm nhận email từ RegisterForm
+  const handleRegisterSuccess = (email) => {
+    setRegisteredEmail(email); // Lưu email lại
+    setStep(2); // Chuyển sang bước OTP
+  };
 
   return (
     <div className="auth-form">
       <div className="logo-section">
-        {/* Luôn hiển thị logo LACA ở mọi bước đăng ký */}
+        {/* Logo luôn hiển thị */}
         <img src={lacaLogo} alt="LACA Logo" className="brand-logo" />
       </div>
 
-      {step === 1 && <RegisterForm onRegisterSuccess={() => setStep(2)} />}
+      {step === 1 && (
+        // Truyền hàm xử lý xuống để lấy dữ liệu
+        <RegisterForm onRegisterSuccess={handleRegisterSuccess} />
+      )}
 
-      {step === 2 && <OtpForm />}
+      {step === 2 && (
+        // 3. Truyền email đã lưu xuống cho OtpForm hiển thị
+        <OtpForm email={registeredEmail} />
+      )}
     </div>
   );
 };
