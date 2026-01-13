@@ -1,0 +1,7 @@
+.login-options {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 15px; margin-bottom: 25px; font-size: 13px; width: 100%;
+}
+.checkbox-container { display: flex; align-items: center; cursor: pointer; color: #555; font-weight: 500; }
+.checkbox-container input { margin-right: 8px; width: 16px; height: 16px; accent-color: #6A5ACD; }
+.forgot-link { color: #6A5ACD; text-decoration: none; font-weight: 600; }
