@@ -43,3 +43,30 @@ const userSchema = new mongoose.Schema({
 });
 
 module.exports = mongoose.model("User", userSchema);
+
+userSchema.statics.findByIdAndUpdate = async function (
+  userId,
+  updateData,
+  options = {}
+) {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    throw new Error("Invalid userId");
+  }
+
+  const user = await this.findById(userId);
+  if (!user) {
+    return null;
+  }
+
+  Object.keys(updateData).forEach((key) => {
+    user[key] = updateData[key];
+  });
+
+  user.updatedAt = new Date();
+
+  await user.save();
+
+  return options.new ? user : null;
+};
+
+module.exports = mongoose.model("User", userSchema);

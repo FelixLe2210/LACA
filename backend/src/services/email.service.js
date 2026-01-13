@@ -2,6 +2,7 @@ const sendEmail = require("../utils/mailer");
 const bcrypt = require("bcryptjs");
 const AppError = require("../utils/appError");
 const OTP = require("../models/emailOTP.model");
+const User = require("../models/user.model");
 
 exports.verifyOTP = async ({ otpToken, otpCode }) => {
   const otp = await OTP.findOne({ otpToken });
@@ -25,6 +26,17 @@ exports.verifyOTP = async ({ otpToken, otpCode }) => {
   }
   otp.isUsed = true;
   await otp.save();
+  const user = await User.findByIdAndUpdate(
+    otp.userId,
+    {
+      isEmailVerified: true,
+      isActive: true,
+    },
+    { new: true }
+  );
+  if (!user) {
+    throw new AppError("User không tồn tại", 404);
+  }
   return {
     userId: otp.userId,
   };
