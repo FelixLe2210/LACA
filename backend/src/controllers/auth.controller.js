@@ -90,7 +90,7 @@ exports.register = async (req, res) => {
 
     await emailService.sendOTPRegister(user.email, plainOTP);
     return res.status(201).json({
-      message: "OTP đã được gửi về email",
+      message: "OTP has been sent to your email",
       data: {
         otpToken: otp.otpToken,
         expiresAt: otp.expiresAt,
@@ -108,7 +108,7 @@ exports.verifyOTP = async (req, res) => {
 
     if (!otpToken || !otpCode) {
       return res.status(400).json({
-        message: "Thiếu otpToken hoặc otpCode",
+        message: "otpToken and otpCode are required",
       });
     }
 
@@ -125,7 +125,7 @@ exports.verifyOTP = async (req, res) => {
     );
     await RefreshToken.create({
       userId,
-      tokenHash,
+      token: tokenHash,
       userAgent: req.headers["user-agent"] || "unknown",
       ipAddress: req.ip,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -135,7 +135,7 @@ exports.verifyOTP = async (req, res) => {
     setRefreshTokenCookie(res, refreshToken);
     return res.status(200).json({
       success: true,
-      message: "Xác thực OTP thành công",
+      message: "OTP validation success",
       data: {
         accessToken,
       },
