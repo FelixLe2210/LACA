@@ -1,12 +1,14 @@
+// src/components/auth/RegisterForm.jsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import InputField from "../ui/InputField";
 import GradientButton from "../ui/GradientButton";
-import { isValidEmail } from "../../utils/validation"; // Ví dụ dùng hàm từ utils
 
 const RegisterForm = ({ onRegisterSuccess }) => {
+  // Thêm 'username' vào state
   const [formData, setFormData] = useState({
     fullName: "",
+    username: "", // <-- Trường mới
     email: "",
     password: "",
     confirmPassword: "",
@@ -14,12 +16,10 @@ const RegisterForm = ({ onRegisterSuccess }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!isValidEmail(formData.email)) {
-      alert("Email không hợp lệ!");
-      return;
-    }
-    // Gọi API đăng ký thành công thì chuyển bước
-    onRegisterSuccess(formData.email);
+    // Logic validate và gọi API sẽ ở đây
+    console.log("Register data:", formData);
+    // Giả lập đăng ký thành công
+    onRegisterSuccess();
   };
 
   return (
@@ -30,6 +30,15 @@ const RegisterForm = ({ onRegisterSuccess }) => {
         value={formData.fullName}
         onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
       />
+
+      {/* --- THÊM Ô INPUT USERNAME --- */}
+      <InputField
+        label="Username"
+        type="text"
+        value={formData.username}
+        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+      />
+
       <InputField
         label="Email"
         type="email"
