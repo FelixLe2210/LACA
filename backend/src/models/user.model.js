@@ -52,20 +52,15 @@ userSchema.statics.findByIdAndUpdate = async function (
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     throw new Error("Invalid userId");
   }
-
   const user = await this.findById(userId);
   if (!user) {
     return null;
   }
-
   Object.keys(updateData).forEach((key) => {
     user[key] = updateData[key];
   });
-
   user.updatedAt = new Date();
-
   await user.save();
-
   return options.new ? user : null;
 };
 
