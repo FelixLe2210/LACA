@@ -2,6 +2,8 @@ const User = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const EmailOTP = require("../models/emailOTP.model");
 const AppError = require("../utils/appError");
+const emailService = require("../services/email.service");
+const { randomUUID } = require("crypto");
 
 const {
   USERNAME_LENGTH_MIN,
@@ -70,9 +72,6 @@ exports.verifyLogin = async (email, password) => {
   if (!email || !password) {
     throw new AppError("Email and password are required", 400);
   }
-  if (!this.checkEmail(email)) {
-    throw new AppError("Email is not valid", 400);
-  }
   const user = await User.findOne({ email });
   if (!user) {
     throw new AppError("User not found", 404);
@@ -83,7 +82,8 @@ exports.verifyLogin = async (email, password) => {
   if (!user.isEmailVerified) {
     throw new AppError("User is not verified", 400);
   }
-  if (!this.comparePassword(password, user.password)) {
+  const passwordCheck = await bcrypt.compare(password, user.password);
+  if (!passwordCheck) {
     throw new AppError("Password is not valid", 400);
   }
   return user;
@@ -94,7 +94,7 @@ exports.verifyRegister = async (
   username,
   email,
   password,
-  confirmPassword
+  confirmPassword,
 ) => {
   if (!email || !password || !username || !fullname || !confirmPassword) {
     throw new AppError("Bad request", 400);
@@ -104,7 +104,7 @@ exports.verifyRegister = async (
   if (!isUsernameLengthValid) {
     throw new AppError(
       `Username must be between ${USERNAME_LENGTH_MIN} and ${USERNAME_LENGTH_MAX} characters`,
-      400
+      400,
     );
   }
 
@@ -122,7 +122,7 @@ exports.verifyRegister = async (
   if (!isPasswordLengthValid) {
     throw new AppError(
       `Password must be between ${PASSWORD_LENGTH_MIN} and ${PASSWORD_LENGTH_MAX} characters`,
-      400
+      400,
     );
   }
 
@@ -131,4 +131,66 @@ exports.verifyRegister = async (
     throw new AppError("Password does not match", 400);
   }
   return true;
+};
+
+exports.forgotPassword = async (email) => {
+  const user = await User.findOne({ email });
+  if (!user) return;
+  await EmailOTP.deleteMany({
+    userId: user._id,
+    purpose: "RESET_PASSWORD",
+  });
+
+  const plainOtp = this.generateOTP();
+  const otpToken = randomUUID();
+  await EmailOTP.create({
+    otpToken,
+    userId: user._id,
+    otp: await bcrypt.hash(plainOtp, Number(process.env.SALT_ROUNDS)),
+    purpose: "RESET_PASSWORD",
+    expiresAt: this.generateOTPExpiredAt(),
+    isUsed: false,
+    attempts: 0,
+  });
+  await emailService.sendOTP(email, plainOtp, "RESET_PASSWORD");
+  return { otpToken };
+};
+
+exports.resetPassword = async ({ otpToken, password, confirmPassword }) => {
+  if (!otpToken || !password || !confirmPassword) {
+    throw new AppError("Bad request", 400);
+  }
+
+  if (!(await this.checkPasswordLength(password))) {
+    throw new AppError(
+      `Password must be between ${PASSWORD_LENGTH_MIN} and ${PASSWORD_LENGTH_MAX} characters`,
+      400,
+    );
+  }
+
+  if (password !== confirmPassword) {
+    throw new AppError("Password does not match", 400);
+  }
+
+  const otp = await EmailOTP.findOne({
+    otpToken,
+    purpose: "RESET_PASSWORD",
+    isUsed: false,
+  });
+
+  if (!otp) {
+    throw new AppError("otpToken does not match", 400);
+  }
+
+  if (otp.expiresAt.getTime() <= Date.now()) {
+    throw new AppError("otpToken expired", 400);
+  }
+
+  await User.findByIdAndUpdate(otp.userId, {
+    password: await bcrypt.hash(password, Number(process.env.SALT_ROUNDS)),
+    updatedAt: Date.now(),
+  });
+
+  otp.isUsed = true;
+  await otp.save();
 };
