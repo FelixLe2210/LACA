@@ -24,25 +24,24 @@ exports.verifyOTP = async ({ otpToken, otpCode }) => {
     await otp.save();
     throw new AppError("Invalid OTP", 400);
   }
-  otp.isUsed = true;
-  await otp.save();
-  const user = await User.findByIdAndUpdate(
-    otp.userId,
-    {
-      isEmailVerified: true,
-      isActive: true,
-    },
-    { new: true }
-  );
-  if (!user) {
-    throw new AppError("User không tồn tại", 404);
+  if (otp.purpose !== "REGISTER") {
+    otp.isUsed = true;
+    await otp.save();
   }
+
   return {
     userId: otp.userId,
+    purpose: otp.purpose,
   };
 };
 
-exports.sendOTPRegister = async (email, otp) => {
+// purpose: REGISTER, RESET_PASSWORD
+exports.sendOTP = async (email, otp, purpose) => {
+  const contentMap = new Map([
+    ["REGISTER", "verify your account"],
+    ["RESET_PASSWORD", "reset your password"],
+  ]);
+
   const subject = "Account Registration Verification Code";
 
   const html = `
@@ -54,7 +53,7 @@ exports.sendOTPRegister = async (email, otp) => {
     <p>Hello,</p>
 
     <p>
-      Use the following OTP to verify your account:
+      Use the following OTP to ${contentMap.get(purpose)}:
     </p>
 
     <div style="text-align: center; margin: 24px 0;">

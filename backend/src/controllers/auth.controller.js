@@ -2,149 +2,178 @@ require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const User = require("../models/user.model");
 const EmailOTP = require("../models/emailOTP.model");
-const jwtUtil = require("../utils/jwt");
-const authService = require("../services/auth.service");
+const AuthService = require("../services/auth.service");
 const { randomUUID } = require("crypto");
-const { setRefreshTokenCookie } = require("../utils/cookie");
 const {
-  USERNAME_LENGTH_MIN,
-  USERNAME_LENGTH_MAX,
-  PASSWORD_LENGTH_MIN,
-  PASSWORD_LENGTH_MAX,
-} = process.env;
-const emailService = require("../services/email.service");
+  setRefreshTokenCookie,
+  clearRefreshTokenCookie,
+} = require("../utils/cookie");
+const EmailService = require("../services/email.service");
+const AppError = require("../utils/appError");
+const tokenService = require("../services/token.service");
 const RefreshToken = require("../models/refreshToken.model");
+const asyncHandler = require("../utils/asyncHandler");
 
-exports.register = async (req, res) => {
-  try {
-    const { fullname, username, email, password, confirmPassword } = req.body;
-    if (!fullname || !username || !email || !password || !confirmPassword) {
-      return res.status(400).json({ message: "Bad request" });
-    }
+exports.register = asyncHandler(async (req, res) => {
+  const { fullname, username, email, password, confirmPassword } = req.body;
 
-    const isUsernameLengthValid = await authService.checkUsernameLength(
-      username
-    );
-    if (!isUsernameLengthValid) {
-      return res.status(400).json({
-        message: `Username must be between ${USERNAME_LENGTH_MIN} and ${USERNAME_LENGTH_MAX} characters`,
-      });
-    }
+  await AuthService.verifyRegister(
+    fullname,
+    username,
+    email,
+    password,
+    confirmPassword,
+  );
 
-    const isEmailExists = await authService.checkEmail(email);
-    if (isEmailExists) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
+  const hashedPassword = await bcrypt.hash(
+    password,
+    Number(process.env.SALT_ROUNDS),
+  );
 
-    const isUsernameExists = await authService.checkUsername(username);
-    if (isUsernameExists) {
-      return res.status(400).json({ message: "Username already exists" });
-    }
+  const user = await User.create({
+    fullname,
+    username,
+    email,
+    password: hashedPassword,
+    isActive: false,
+    isEmailVerified: false,
+  });
 
-    const isPasswordLengthValid = await authService.checkPasswordLength(
-      password
-    );
-    if (!isPasswordLengthValid) {
-      return res.status(400).json({
-        message: `Password must be between ${PASSWORD_LENGTH_MIN} and ${PASSWORD_LENGTH_MAX} characters`,
-      });
-    }
+  const plainOTP = AuthService.generateOTP();
+  const hashedOTP = await bcrypt.hash(
+    plainOTP,
+    Number(process.env.SALT_ROUNDS),
+  );
 
-    const isPasswordMatch = await authService.comparePassword(
-      password,
-      confirmPassword
-    );
-    if (!isPasswordMatch) {
-      return res.status(400).json({ message: "Password does not match" });
-    }
-    const hashedPassword = await bcrypt.hash(
-      password,
-      parseInt(process.env.SALT_ROUNDS)
-    );
+  const otp = await EmailOTP.create({
+    otpToken: randomUUID(),
+    userId: user._id,
+    otp: hashedOTP,
+    purpose: "REGISTER",
+    expiresAt: AuthService.generateOTPExpiredAt(),
+    isUsed: false,
+    attempts: 0,
+  });
 
-    const user = await User.create({
-      fullname,
-      username,
-      email,
-      password: hashedPassword,
-      isActive: false,
-      isEmailVerified: false,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+  await EmailService.sendOTP(user.email, plainOTP, "REGISTER");
 
-    const plainOTP = authService.generateOTP();
-    const hashedOTP = await bcrypt.hash(
-      plainOTP,
-      parseInt(process.env.SALT_ROUNDS)
-    );
+  res.status(201).json({
+    success: true,
+    message: "OTP has been sent to your email",
+    data: {
+      otpToken: otp.otpToken,
+      expiresAt: otp.expiresAt,
+    },
+  });
+});
 
-    const otp = await EmailOTP.create({
-      otpToken: randomUUID(),
-      userId: user._id,
-      otp: hashedOTP,
-      expiresAt: authService.generateOTPExpiredAt(),
-      isUsed: false,
-      attempts: 0,
-    });
+exports.verifyOTP = asyncHandler(async (req, res) => {
+  const { otpToken, otpCode } = req.body;
 
-    await emailService.sendOTPRegister(user.email, plainOTP);
-    return res.status(201).json({
-      message: "OTP has been sent to your email",
-      data: {
-        otpToken: otp.otpToken,
-        expiresAt: otp.expiresAt,
-      },
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
+  if (!otpToken || !otpCode) {
+    throw new AppError("otpToken and otpCode are required", 400);
   }
-};
 
-exports.verifyOTP = async (req, res) => {
-  try {
-    const { otpToken, otpCode } = req.body;
+  const { userId, purpose } = await EmailService.verifyOTP({
+    otpToken,
+    otpCode,
+  });
 
-    if (!otpToken || !otpCode) {
-      return res.status(400).json({
-        message: "otpToken and otpCode are required",
-      });
+  if (purpose === "REGISTER") {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        isEmailVerified: true,
+        isActive: true,
+      },
+      { new: true },
+    );
+
+    if (!user) {
+      throw new AppError("User not found", 404);
     }
 
-    const { userId } = await emailService.verifyOTP({
-      otpToken,
-      otpCode,
-    });
-    const accessToken = jwtUtil.generateAccessToken(userId);
-    const refreshToken = jwtUtil.generateRefreshToken(userId);
-
-    const tokenHash = await bcrypt.hash(
-      refreshToken,
-      Number(process.env.SALT_ROUNDS)
-    );
-    await RefreshToken.create({
-      userId,
-      token: tokenHash,
-      userAgent: req.headers["user-agent"] || "unknown",
-      ipAddress: req.ip,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      isRevoked: false,
-    });
+    const { accessToken, refreshToken } =
+      await tokenService.generateAndStoreTokens({
+        userId,
+        req,
+      });
 
     setRefreshTokenCookie(res, refreshToken);
+
     return res.status(200).json({
       success: true,
-      message: "OTP validation success",
-      data: {
-        accessToken,
-      },
-    });
-  } catch (error) {
-    const statusCode = error.statusCode || 500;
-    console.error(error);
-    return res.status(statusCode).json({
-      message: error.message || "Internal server error",
+      message: "OTP verified",
+      data: { accessToken },
     });
   }
-};
+
+  if (purpose === "RESET_PASSWORD") {
+    return res.status(200).json({
+      success: true,
+      message: "OTP verified",
+      data: { otpToken },
+    });
+  }
+
+  throw new AppError("Unsupported OTP purpose", 400);
+});
+
+exports.login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await AuthService.verifyLogin(email, password);
+
+  const { accessToken, refreshToken } =
+    await tokenService.generateAndStoreTokens({
+      userId: user._id,
+      req,
+    });
+
+  setRefreshTokenCookie(res, refreshToken);
+
+  res.status(200).json({
+    success: true,
+    message: "Login success",
+    data: { accessToken },
+  });
+});
+
+exports.forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const { otpToken } = await AuthService.forgotPassword(email);
+  return res.status(200).json({
+    success: true,
+    message: "OTP has been sent to your email",
+    otpToken,
+  });
+});
+
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const { otpToken, password, confirmPassword } = req.body;
+  await AuthService.resetPassword({ otpToken, password, confirmPassword });
+  res.status(200).json({
+    success: true,
+    message: "Password reset successful",
+  });
+});
+
+exports.logout = asyncHandler(async (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (refreshToken) {
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(refreshToken)
+      .digest("hex");
+
+    await RefreshToken.deleteOne({ token: hashedToken });
+  }
+
+  clearRefreshTokenCookie(res);
+
+  return res.status(200).json({
+    success: true,
+    message: "Logout successful",
+  });
+});
