@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Dùng để làm nút Back
 import GradientButton from "../components/ui/GradientButton";
 import TextArea from "../components/ui/TextArea";
+import "./FeedbackPage.css";
 
 const FeedbackPage = () => {
   const navigate = useNavigate();

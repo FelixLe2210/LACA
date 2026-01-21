@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import GradientButton from "../components/ui/GradientButton";
 import TextArea from "../components/ui/TextArea";
+import "./ReportPage.css";
 
 const ReportPage = () => {
   const navigate = useNavigate();

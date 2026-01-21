@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import "./Chat.css";
 
 const ChatDetailPage = () => {
   const navigate = useNavigate();
