@@ -135,7 +135,7 @@ exports.verifyRegister = async (
 
 exports.forgotPassword = async (email) => {
   const user = await User.findOne({ email });
-  if (!user) return;
+  if (!user) throw new AppError("Email does not exist", 400);
   await EmailOTP.deleteMany({
     userId: user._id,
     purpose: "RESET_PASSWORD",
