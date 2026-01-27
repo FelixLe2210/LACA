@@ -1,19 +1,19 @@
 import axios from "axios";
 
 const API_BASE_URL =
-    process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+  process.env.REACT_APP_API_URL || "http://localhost:8000/api";
 
 const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: { "Content-Type": "application/json" },
-    timeout: 10000,
+  baseURL: API_BASE_URL,
+  headers: { "Content-Type": "application/json" },
+  timeout: 10000,
 });
 
 // Interceptor tự động thêm token vào mọi request
 apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem("authToken");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
+  const token = localStorage.getItem("authToken");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
 });
 
 // ============================================
@@ -26,44 +26,44 @@ apiClient.interceptors.request.use((config) => {
  * @param {number} longitude - Kinh độ
  * @param {number} radius - Bán kính tìm kiếm (mét), mặc định 5000m = 5km
  */
-export const getCheckInsNearby = async(latitude, longitude, radius = 5000) => {
-    try {
-        const res = await apiClient.get("/map/checkins/nearby", {
-            params: { latitude, longitude, radius },
-        });
-        return {
-            success: true,
-            message: "Lấy danh sách check-in thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể lấy danh sách check-in",
-            data: [],
-        };
-    }
+export const getCheckInsNearby = async (latitude, longitude, radius = 5000) => {
+  try {
+    const res = await apiClient.get("/map/checkins/nearby", {
+      params: { latitude, longitude, radius },
+    });
+    return {
+      success: true,
+      message: "Lấy danh sách check-in thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể lấy danh sách check-in",
+      data: [],
+    };
+  }
 };
 
 /**
  * Lấy chi tiết một check-in (bao gồm tất cả ảnh và reactions)
  * @param {string} checkInId - ID của check-in
  */
-export const getCheckInDetails = async(checkInId) => {
-    try {
-        const res = await apiClient.get(`/map/checkins/${checkInId}`);
-        return {
-            success: true,
-            message: "Lấy chi tiết check-in thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể lấy chi tiết check-in",
-            data: null,
-        };
-    }
+export const getCheckInDetails = async (checkInId) => {
+  try {
+    const res = await apiClient.get(`/map/checkins/${checkInId}`);
+    return {
+      success: true,
+      message: "Lấy chi tiết check-in thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể lấy chi tiết check-in",
+      data: null,
+    };
+  }
 };
 
 /**
@@ -75,61 +75,61 @@ export const getCheckInDetails = async(checkInId) => {
  * @param {string} checkInData.description - Mô tả (optional)
  * @param {Array<File>} photos - Mảng các file ảnh
  */
-export const createCheckIn = async(checkInData, photos = []) => {
-    try {
-        const formData = new FormData();
-
-        // Thêm data check-in
-        formData.append("locationName", checkInData.locationName);
-        formData.append("latitude", checkInData.latitude);
-        formData.append("longitude", checkInData.longitude);
-        if (checkInData.description) {
-            formData.append("description", checkInData.description);
-        }
-
-        // Thêm photos
-        photos.forEach((photo, index) => {
-            formData.append("photos", photo);
-        });
-
-        const res = await apiClient.post("/map/checkins", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-        });
-
-        return {
-            success: true,
-            message: "Tạo check-in thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể tạo check-in",
-            data: null,
-        };
+export const createCheckIn = async (checkInData, photos = []) => {
+  try {
+    const formData = new FormData();
+    
+    // Thêm data check-in
+    formData.append("locationName", checkInData.locationName);
+    formData.append("latitude", checkInData.latitude);
+    formData.append("longitude", checkInData.longitude);
+    if (checkInData.description) {
+      formData.append("description", checkInData.description);
     }
+    
+    // Thêm photos
+    photos.forEach((photo, index) => {
+      formData.append("photos", photo);
+    });
+
+    const res = await apiClient.post("/map/checkins", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    
+    return {
+      success: true,
+      message: "Tạo check-in thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể tạo check-in",
+      data: null,
+    };
+  }
 };
 
 /**
  * Xóa check-in của mình
  * @param {string} checkInId - ID của check-in
  */
-export const deleteCheckIn = async(checkInId) => {
-    try {
-        const res = await apiClient.delete(`/map/checkins/${checkInId}`);
-        return {
-            success: true,
-            message: "Xóa check-in thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể xóa check-in",
-        };
-    }
+export const deleteCheckIn = async (checkInId) => {
+  try {
+    const res = await apiClient.delete(`/map/checkins/${checkInId}`);
+    return {
+      success: true,
+      message: "Xóa check-in thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể xóa check-in",
+    };
+  }
 };
 
 // ============================================
@@ -141,24 +141,24 @@ export const deleteCheckIn = async(checkInId) => {
  * @param {string} photoId - ID của ảnh
  * @param {string} reactionType - Loại reaction: 'love', 'fire', 'laugh', 'wow'
  */
-export const addReaction = async(photoId, reactionType) => {
-    try {
-        const res = await apiClient.post("/map/reactions", {
-            photoId,
-            reactionType,
-        });
-        return {
-            success: true,
-            message: "Đã thả cảm xúc",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể thả cảm xúc",
-            data: null,
-        };
-    }
+export const addReaction = async (photoId, reactionType) => {
+  try {
+    const res = await apiClient.post("/map/reactions", {
+      photoId,
+      reactionType,
+    });
+    return {
+      success: true,
+      message: "Đã thả cảm xúc",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể thả cảm xúc",
+      data: null,
+    };
+  }
 };
 
 /**
@@ -166,44 +166,44 @@ export const addReaction = async(photoId, reactionType) => {
  * @param {string} photoId - ID của ảnh
  * @param {string} reactionType - Loại reaction cần xóa
  */
-export const removeReaction = async(photoId, reactionType) => {
-    try {
-        const res = await apiClient.delete("/map/reactions", {
-            data: { photoId, reactionType },
-        });
-        return {
-            success: true,
-            message: "Đã bỏ cảm xúc",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể bỏ cảm xúc",
-            data: null,
-        };
-    }
+export const removeReaction = async (photoId, reactionType) => {
+  try {
+    const res = await apiClient.delete("/map/reactions", {
+      data: { photoId, reactionType },
+    });
+    return {
+      success: true,
+      message: "Đã bỏ cảm xúc",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể bỏ cảm xúc",
+      data: null,
+    };
+  }
 };
 
 /**
  * Lấy danh sách người đã react vào ảnh
  * @param {string} photoId - ID của ảnh
  */
-export const getPhotoReactions = async(photoId) => {
-    try {
-        const res = await apiClient.get(`/map/reactions/${photoId}`);
-        return {
-            success: true,
-            message: "Lấy danh sách reactions thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể lấy reactions",
-            data: [],
-        };
-    }
+export const getPhotoReactions = async (photoId) => {
+  try {
+    const res = await apiClient.get(`/map/reactions/${photoId}`);
+    return {
+      success: true,
+      message: "Lấy danh sách reactions thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể lấy reactions",
+      data: [],
+    };
+  }
 };
 
 // ============================================
@@ -215,24 +215,24 @@ export const getPhotoReactions = async(photoId) => {
  * @param {number} latitude - Vĩ độ hiện tại
  * @param {number} longitude - Kinh độ hiện tại
  */
-export const updateUserLocation = async(latitude, longitude) => {
-    try {
-        const res = await apiClient.put("/map/location", {
-            latitude,
-            longitude,
-        });
-        return {
-            success: true,
-            message: "Cập nhật vị trí thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể cập nhật vị trí",
-            data: null,
-        };
-    }
+export const updateUserLocation = async (latitude, longitude) => {
+  try {
+    const res = await apiClient.put("/map/location", {
+      latitude,
+      longitude,
+    });
+    return {
+      success: true,
+      message: "Cập nhật vị trí thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể cập nhật vị trí",
+      data: null,
+    };
+  }
 };
 
 /**
@@ -241,23 +241,23 @@ export const updateUserLocation = async(latitude, longitude) => {
  * @param {number} latitude - Vĩ độ hiện tại (để sắp xếp theo khoảng cách)
  * @param {number} longitude - Kinh độ hiện tại
  */
-export const searchLocations = async(query, latitude, longitude) => {
-    try {
-        const res = await apiClient.get("/map/locations/search", {
-            params: { query, latitude, longitude },
-        });
-        return {
-            success: true,
-            message: "Tìm kiếm thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Tìm kiếm thất bại",
-            data: [],
-        };
-    }
+export const searchLocations = async (query, latitude, longitude) => {
+  try {
+    const res = await apiClient.get("/map/locations/search", {
+      params: { query, latitude, longitude },
+    });
+    return {
+      success: true,
+      message: "Tìm kiếm thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Tìm kiếm thất bại",
+      data: [],
+    };
+  }
 };
 
 // ============================================
@@ -268,25 +268,25 @@ export const searchLocations = async(query, latitude, longitude) => {
  * Lấy tất cả check-in của một user
  * @param {string} userId - ID của user (nếu không truyền sẽ lấy của chính mình)
  */
-export const getUserCheckIns = async(userId = null) => {
-    try {
-        const endpoint = userId ?
-            `/map/users/${userId}/checkins` :
-            "/map/users/me/checkins";
-
-        const res = await apiClient.get(endpoint);
-        return {
-            success: true,
-            message: "Lấy danh sách check-in thành công",
-            data: res.data,
-        };
-    } catch (err) {
-        return {
-            success: false,
-            message: err.response ? .data ? .message || "Không thể lấy check-in của user",
-            data: [],
-        };
-    }
+export const getUserCheckIns = async (userId = null) => {
+  try {
+    const endpoint = userId 
+      ? `/map/users/${userId}/checkins` 
+      : "/map/users/me/checkins";
+    
+    const res = await apiClient.get(endpoint);
+    return {
+      success: true,
+      message: "Lấy danh sách check-in thành công",
+      data: res.data,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      message: err.response?.data?.message || "Không thể lấy check-in của user",
+      data: [],
+    };
+  }
 };
 
 export default apiClient;
