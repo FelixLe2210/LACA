@@ -6,6 +6,7 @@ import FeedbackPage from '../pages/FeedbackPage';
 import ReportPage from '../pages/ReportPage';
 import ChatListPage from '../pages/ChatListPage';
 import ChatDetailPage from '../pages/ChatDetailPage';
+import DeleteAccountConfirmPage from '../pages/DeleteAccountConfirmPage';
 
 const AppRouter = () => {
   return (
@@ -19,6 +20,7 @@ const AppRouter = () => {
         <Route path="/report" element={<ReportPage />} />
         <Route path="/chat" element={<ChatListPage />} />
         <Route path="/chat/detail" element={<ChatDetailPage />} />
+        <Route path="/delete-account-confirm" element={<DeleteAccountConfirmPage />} />
       </Routes>
     </BrowserRouter>
   );
