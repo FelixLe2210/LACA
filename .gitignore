@@ -1,5 +1,6 @@
 # Chặn file chứa mật khẩu
 .env
+backend/.env
 
 # Chặn thư viện 
 node_modules/

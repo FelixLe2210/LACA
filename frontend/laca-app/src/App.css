@@ -1,12 +1,11 @@
-/* src/App.css */
+/* --- GLOBAL STYLES (Dùng chung cho cả Website) --- */
 * {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  /* Màu nền xám nhạt theo thiết kế */
-  background-color: #f5f5f5;
+  background-color: #f5f5f5; /* Màu nền xám toàn cục */
   font-family: 'Segoe UI', 'Roboto', sans-serif;
   display: flex;
   justify-content: center;
@@ -14,30 +13,34 @@ body {
   min-height: 100vh;
 }
 
-/* Khung chứa form màu trắng */
+/* --- SHARED LAYOUT (Khung chứa Form dùng chung) --- */
+/* Class này dùng cho cả Login, Register, Feedback, Report, Chat */
 .auth-form {
   background-color: #fff;
   padding: 40px;
-  border-radius: 30px; /* Bo góc nhiều hơn */
+  border-radius: 30px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 450px; /* Tăng chiều rộng một chút */
+  max-width: 450px;
   margin: 20px;
+  position: relative; /* Thêm cái này để hỗ trợ canh chỉnh tuyệt đối bên trong */
 }
 
-/* Phần Logo */
+/* --- SHARED UI COMPONENTS (Các thành phần dùng đi dùng lại) --- */
+
+/* 1. Logo */
 .logo-section {
   text-align: center;
   margin-bottom: 30px;
 }
 
 .brand-logo {
-  width: 180px; /* Điều chỉnh kích thước logo */
+  width: 180px;
   display: block;
   margin: 0 auto;
 }
 
-/* --- STYLE CHO INPUT --- */
+/* 2. Ô nhập liệu (Input) */
 .input-group {
   margin-bottom: 20px;
 }
@@ -53,9 +56,7 @@ body {
 .rounded-input {
   width: 100%;
   padding: 15px 20px;
-  /* Bo tròn dạng viên thuốc */
   border-radius: 50px;
-  /* Viền xám nhạt và nền trắng */
   border: 1px solid #ccc;
   background-color: #fff;
   font-size: 16px;
@@ -64,16 +65,35 @@ body {
 }
 
 .rounded-input:focus {
-  border-color: #e94057; /* Đổi màu viền khi focus */
+  border-color: #e94057;
 }
 
-/* --- STYLE CHO NÚT BẤM --- */
+/* 3. Ô nhập văn bản lớn (TextArea) - Dùng cho cả Feedback & Report */
+.rounded-textarea {
+  width: 100%;
+  padding: 15px;
+  border-radius: 15px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  font-size: 16px;
+  font-family: inherit;
+  resize: none;
+  outline: none;
+  transition: border-color 0.3s;
+  color: #333;
+}
+
+.rounded-textarea:focus {
+  border-color: #e94057;
+  background-color: #fff;
+}
+
+/* 4. Nút bấm (Button) */
 .btn-gradient {
   width: 100%;
   padding: 15px;
   border: none;
   border-radius: 50px;
-  /* Gradient mới từ hồng sang xanh */
   background: linear-gradient(to right, #e94057, #22a0c4);
   color: white;
   font-size: 18px;
@@ -87,7 +107,7 @@ body {
   opacity: 0.9;
 }
 
-/* --- STYLE CHO FOOTER --- */
+/* 5. Footer Links (Login/Register Footer) */
 .footer-text {
   text-align: center;
   margin-top: 25px;
@@ -96,7 +116,7 @@ body {
 }
 
 .link-bold {
-  color: #6A5ACD; /* Màu tím cho link */
+  color: #6A5ACD;
   font-weight: bold;
   text-decoration: none;
 }

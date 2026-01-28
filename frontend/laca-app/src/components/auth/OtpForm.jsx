@@ -5,13 +5,13 @@ import './OtpForm.css';
 
 // Hàm che email (Ví dụ: nhat.huy@gmail.com -> n***y@gmail.com)
 const maskEmail = (email) => {
-  if (!email) return 'your@email.com'; 
+  if (!email) return 'your@email.com';
   const [name, domain] = email.split('@');
-  
+
   if (name.length <= 2) {
     return `${name[0]}***@${domain}`;
   }
-  
+
   // Lấy ký tự đầu + *** + ký tự cuối của tên
   const maskedName = `${name[0]}***${name[name.length - 1]}`;
   return `${maskedName}@${domain}`;

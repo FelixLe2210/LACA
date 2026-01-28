@@ -24,6 +24,31 @@
   box-shadow: 0 0 0 3px rgba(233, 64, 87, 0.2);
 }
 
+/* Thêm Class viền đỏ khi nhập sai */
+.otp-box.error-border {
+  border-color: #ff3333;
+  background-color: #fff0f0;
+}
+
+/* Thêm Class dòng chữ thông báo lỗi */
+.error-message {
+  color: #ff3333;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  margin-top: -15px;
+  margin-bottom: 15px;
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
 /* Dòng thông báo email */
 .sub-text {
   font-size: 14px;
